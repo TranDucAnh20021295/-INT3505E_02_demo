@@ -18,13 +18,13 @@ class Book(db.Model):
 
 # Helper function to generate ETag
 def generate_etag(data):
-    """Generate ETag based on data content"""
+    # Generate ETag based on data content
     content = str(data)
     return hashlib.md5(content.encode('utf-8')).hexdigest()
 
 # Helper function to check if client has cached version
 def check_cache_headers(last_modified, etag):
-    """Check if client has cached version"""
+    # Check if client has cached version
     if_modified_since = request.headers.get('If-Modified-Since')
     if_none_match = request.headers.get('If-None-Match')
     
@@ -43,10 +43,7 @@ def check_cache_headers(last_modified, etag):
     
     return False
 
-db.create_all()
-
-# ===== BOOK MANAGEMENT WITH CACHE =====
-
+# Create book
 @app.route('/books', methods=['POST'])
 def create_book():
     data = request.get_json()
@@ -63,12 +60,10 @@ def create_book():
     
     return response
 
+# Read book
 @app.route('/books', methods=['GET'])
 def get_books():
-    """
-    Lấy danh sách sách với cache headers
-    Cache headers: ETag, Last-Modified, Cache-Control
-    """
+
     books = Book.query.all()
     books_data = [{"id": b.id, "title": b.title, "author": b.author} for b in books]
     
@@ -97,6 +92,7 @@ def get_books():
     
     return response
 
+# Update book
 @app.route('/books/<int:id>', methods=['PUT'])
 def update_book(id):
     data = request.get_json()
@@ -115,6 +111,7 @@ def update_book(id):
     
     return response
 
+# Delete book
 @app.route('/books/<int:id>', methods=['DELETE'])
 def delete_book(id):
     book = Book.query.get_or_404(id)
@@ -130,11 +127,10 @@ def delete_book(id):
     
     return response
 
+# Read book by ID
 @app.route('/books/<int:id>', methods=['GET'])
 def get_book(id):
-    """
-    Lấy sách theo ID với cache headers
-    """
+    
     book = Book.query.get_or_404(id)
     book_data = {"id": book.id, "title": book.title, "author": book.author}
     
@@ -156,42 +152,7 @@ def get_book(id):
     
     return response
 
-@app.route('/', methods=['GET'])
-def home():
-    """API Documentation"""
-    return jsonify({
-        'message': 'Library Management System - Version 4',
-        'description': 'Cacheable - Thêm cache headers cho endpoint lấy danh sách sách',
-        'cache_features': {
-            'ETag': 'Entity tags for content-based caching',
-            'Last-Modified': 'Time-based caching',
-            'Cache-Control': 'Cache directives (public, max-age=300)',
-            '304 Not Modified': 'Return when client has cached version',
-            'Cache Invalidation': 'POST/PUT/DELETE operations invalidate cache'
-        },
-        'endpoints': {
-            'POST /books': 'Create book (invalidates cache)',
-            'GET /books': 'Get all books with cache headers',
-            'GET /books/<id>': 'Get book by ID with cache headers',
-            'PUT /books/<id>': 'Update book (invalidates cache)',
-            'DELETE /books/<id>': 'Delete book (invalidates cache)'
-        },
-        'cache_examples': {
-            'first_request': {
-                'request': 'GET /books',
-                'response': '200 OK with ETag and Last-Modified headers'
-            },
-            'cached_request': {
-                'request': 'GET /books (with If-None-Match: <ETag>)',
-                'response': '304 Not Modified'
-            },
-            'cache_invalidation': {
-                'request': 'POST /books (create new book)',
-                'response': '201 Created with Cache-Control: no-cache'
-            }
-        }
-    })
-
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True, port=5003)

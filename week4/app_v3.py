@@ -26,10 +26,7 @@ class Borrow(db.Model):
     actual_return_date = db.Column(db.String(20))
     status = db.Column(db.String(20), default='borrowed')
 
-db.create_all()
-
-# ===== BOOK MANAGEMENT =====
-
+# Create book
 @app.route('/books', methods=['POST'])
 def create_book():
     data = request.get_json()
@@ -38,11 +35,13 @@ def create_book():
     db.session.commit()
     return jsonify({"message": "Book created"}), 201
 
+# Read book
 @app.route('/books', methods=['GET'])
 def get_books():
     books = Book.query.all()
-    return jsonify([{"id": b.id, "title": b.title, "author": b.author, "available": b.available} for b in books])
+    return jsonify([{"id": b.id, "title": b.title, "author": b.author} for b in books])
 
+# Update book
 @app.route('/books/<int:id>', methods=['PUT'])
 def update_book(id):
     data = request.get_json()
@@ -52,6 +51,7 @@ def update_book(id):
     db.session.commit()
     return jsonify({"message": "Book updated"})
 
+# Delete book
 @app.route('/books/<int:id>', methods=['DELETE'])
 def delete_book(id):
     book = Book.query.get_or_404(id)
@@ -59,8 +59,7 @@ def delete_book(id):
     db.session.commit()
     return jsonify({"message": "Book deleted"})
 
-# ===== USER MANAGEMENT =====
-
+# Create user
 @app.route('/users', methods=['POST'])
 def create_user():
     data = request.get_json()
@@ -69,19 +68,15 @@ def create_user():
     db.session.commit()
     return jsonify({"message": "User created"}), 201
 
+# Read user
 @app.route('/users', methods=['GET'])
 def get_users():
     users = User.query.all()
     return jsonify([{"id": u.id, "name": u.name, "email": u.email} for u in users])
 
-# ===== BORROW/RETURN (Stateless) =====
-
+# Borrow book
 @app.route('/borrow', methods=['POST'])
 def borrow_book():
-    """
-    Mượn sách - Stateless operation
-    Mỗi request chứa đủ thông tin: user_id, book_id, borrow_date, return_date
-    """
     data = request.get_json()
     
     # Validate user exists
@@ -98,13 +93,13 @@ def borrow_book():
     if book.available <= 0:
         return jsonify({"error": "Book not available"}), 409
     
-    # Check if user already borrowed this book
+    # Check if user already borrowed this book exists       
     existing_borrow = Borrow.query.filter_by(
         user_id=data['user_id'], 
         book_id=data['book_id'], 
         status='borrowed'
     ).first()
-    
+
     if existing_borrow:
         return jsonify({"error": "User already borrowed this book"}), 409
     
@@ -117,12 +112,8 @@ def borrow_book():
     )
     
     db.session.add(new_borrow)
-    
-    # Update book availability
     book.available -= 1
-    
     db.session.commit()
-    
     return jsonify({
         "message": "Book borrowed successfully",
         "borrow": {
@@ -141,15 +132,12 @@ def borrow_book():
         }
     }), 201
 
+# Return book
 @app.route('/return', methods=['POST'])
 def return_book():
-    """
-    Trả sách - Stateless operation
-    Mỗi request chứa đủ thông tin: user_id, book_id, actual_return_date
-    """
     data = request.get_json()
     
-    # Find the borrow record
+    # Find the borrow record exists
     borrow_record = Borrow.query.filter_by(
         user_id=data['user_id'],
         book_id=data['book_id'],
@@ -159,7 +147,7 @@ def return_book():
     if not borrow_record:
         return jsonify({"error": "No active borrow record found"}), 404
     
-    # Find the book
+    # Find the book exists
     book = Book.query.get(data['book_id'])
     if not book:
         return jsonify({"error": "Book not found"}), 404
@@ -192,9 +180,9 @@ def return_book():
         }
     })
 
+# Read borrow
 @app.route('/borrows', methods=['GET'])
 def get_borrows():
-    """Lấy danh sách mượn/trả sách"""
     borrows = Borrow.query.all()
     return jsonify([{
         "id": b.id,
@@ -206,52 +194,7 @@ def get_borrows():
         "status": b.status
     } for b in borrows])
 
-@app.route('/', methods=['GET'])
-def home():
-    """API Documentation"""
-    return jsonify({
-        'message': 'Library Management System - Version 3',
-        'description': 'Stateless + Borrow/Return - Mỗi request chứa đủ thông tin',
-        'endpoints': {
-            'Books': {
-                'POST /books': 'Create book (title, author)',
-                'GET /books': 'Get all books',
-                'PUT /books/<id>': 'Update book',
-                'DELETE /books/<id>': 'Delete book'
-            },
-            'Users': {
-                'POST /users': 'Create user (name, email)',
-                'GET /users': 'Get all users'
-            },
-            'Borrow/Return': {
-                'POST /borrow': 'Borrow book (user_id, book_id, borrow_date, return_date)',
-                'POST /return': 'Return book (user_id, book_id, actual_return_date)',
-                'GET /borrows': 'Get all borrow records'
-            }
-        },
-        'examples': {
-            'borrow_book': {
-                'method': 'POST',
-                'url': '/borrow',
-                'body': {
-                    'user_id': 1,
-                    'book_id': 1,
-                    'borrow_date': '2024-01-01',
-                    'return_date': '2024-01-15'
-                }
-            },
-            'return_book': {
-                'method': 'POST',
-                'url': '/return',
-                'body': {
-                    'user_id': 1,
-                    'book_id': 1,
-                    'actual_return_date': '2024-01-14'
-                }
-            }
-        }
-    })
-
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True, port=5002)

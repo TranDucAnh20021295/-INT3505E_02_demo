@@ -10,8 +10,6 @@ class Book(db.Model):
     title = db.Column(db.String(100))
     author = db.Column(db.String(100))
 
-db.create_all()
-
 @app.route('/book', methods=['POST'])
 def book_actions():
     data = request.get_json()
@@ -31,4 +29,6 @@ def book_actions():
         return jsonify({"error": "Invalid action"}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True, port=5000)

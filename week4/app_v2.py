@@ -10,8 +10,6 @@ class Book(db.Model):
     title = db.Column(db.String(100))
     author = db.Column(db.String(100))
 
-db.create_all()
-
 # Create
 @app.route('/books', methods=['POST'])
 def create_book():
@@ -46,4 +44,6 @@ def delete_book(id):
     return jsonify({"message": "Book deleted"})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True, port=5001)
