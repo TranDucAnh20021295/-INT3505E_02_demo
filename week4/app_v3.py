@@ -1,8 +1,38 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from flask import send_from_directory
+from flask import Flask, send_from_directory
 
 app = Flask(__name__)
+
+@app.route("/static/openapi.yml")
+def serve_openapi():
+    return send_from_directory("static", "openapi.yml")
+
+@app.route("/swagger")
+def swagger_ui():
+    # Trang Swagger UI
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Swagger UI</title>
+      <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+      <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+    </head>
+    <body>
+      <div id="swagger-ui"></div>
+      <script>
+        const ui = SwaggerUIBundle({
+          url: "/static/openapi.yml", // load file YAML
+          dom_id: '#swagger-ui'
+        });
+      </script>
+    </body>
+    </html>
+    '''
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library_v3.db'
 db = SQLAlchemy(app)
 
@@ -16,6 +46,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     email = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(100))
 
 class Borrow(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -63,10 +94,29 @@ def delete_book(id):
 @app.route('/users', methods=['POST'])
 def create_user():
     data = request.get_json()
-    new_user = User(name=data['name'], email=data['email'])
+    new_user = User(name=data['name'], email=data['email'], password=data['password'])
     db.session.add(new_user)
     db.session.commit()
     return jsonify({"message": "User created"}), 201
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    
+    # Validate user credentials
+    user = User.query.filter_by(email=data['email'], password=data['password']).first()
+    if not user:
+        return jsonify({"error": "Invalid credentials"}), 401
+    
+    # Stateless: Trả về user info, client tự quản lý
+    return jsonify({
+        "message": "Login successful",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        }
+    })
 
 # Read user
 @app.route('/users', methods=['GET'])
@@ -74,9 +124,9 @@ def get_users():
     users = User.query.all()
     return jsonify([{"id": u.id, "name": u.name, "email": u.email} for u in users])
 
-# Borrow book
-@app.route('/borrow', methods=['POST'])
-def borrow_book():
+# Loan management - RESTful resource
+@app.route('/loans', methods=['POST'])
+def create_loan():
     data = request.get_json()
     
     # Validate user exists
@@ -115,7 +165,7 @@ def borrow_book():
     book.available -= 1
     db.session.commit()
     return jsonify({
-        "message": "Book borrowed successfully",
+        "message": "Loan created successfully",
         "borrow": {
             "id": new_borrow.id,
             "user_id": new_borrow.user_id,
@@ -132,23 +182,22 @@ def borrow_book():
         }
     }), 201
 
-# Return book
-@app.route('/return', methods=['POST'])
-def return_book():
+# Return book - RESTful approach with loan ID
+@app.route('/loans/<int:loan_id>/return', methods=['PUT'])
+def return_loan(loan_id):
     data = request.get_json()
     
-    # Find the borrow record exists
-    borrow_record = Borrow.query.filter_by(
-        user_id=data['user_id'],
-        book_id=data['book_id'],
-        status='borrowed'
-    ).first()
+    # Find the borrow record by loan ID
+    borrow_record = Borrow.query.get(loan_id)
     
     if not borrow_record:
-        return jsonify({"error": "No active borrow record found"}), 404
+        return jsonify({"error": "Loan not found"}), 404
     
-    # Find the book exists
-    book = Book.query.get(data['book_id'])
+    if borrow_record.status != 'borrowed':
+        return jsonify({"error": "Loan is not active"}), 400
+    
+    # Find the book from loan record
+    book = Book.query.get(borrow_record.book_id)
     if not book:
         return jsonify({"error": "Book not found"}), 404
     
@@ -162,7 +211,7 @@ def return_book():
     db.session.commit()
     
     return jsonify({
-        "message": "Book returned successfully",
+        "message": "Loan returned successfully",
         "borrow": {
             "id": borrow_record.id,
             "user_id": borrow_record.user_id,
@@ -180,9 +229,9 @@ def return_book():
         }
     })
 
-# Read borrow
-@app.route('/borrows', methods=['GET'])
-def get_borrows():
+# GET all loans - RESTful resource
+@app.route('/loans', methods=['GET'])
+def get_loans():
     borrows = Borrow.query.all()
     return jsonify([{
         "id": b.id,
@@ -194,6 +243,27 @@ def get_borrows():
         "status": b.status
     } for b in borrows])
 
+# GET specific loan - RESTful resource
+@app.route('/loans/<int:loan_id>', methods=['GET'])
+def get_loan(loan_id):
+    borrow = Borrow.query.get(loan_id)
+    if not borrow:
+        return jsonify({"error": "Loan not found"}), 404
+    
+    return jsonify({
+        "id": borrow.id,
+        "user_id": borrow.user_id,
+        "book_id": borrow.book_id,
+        "borrow_date": borrow.borrow_date,
+        "return_date": borrow.return_date,
+        "actual_return_date": borrow.actual_return_date,
+        "status": borrow.status
+    })
+
+# Legacy endpoint for backward compatibility
+@app.route('/borrows', methods=['GET'])
+def get_borrows():
+    return get_loans()
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
