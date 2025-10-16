@@ -3,8 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask import send_from_directory
 from flask import Flask, send_from_directory
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/static/openapi.yml")
 def serve_openapi():
