@@ -126,7 +126,7 @@ def get_users():
     users = User.query.all()
     return jsonify([{"id": u.id, "name": u.name, "email": u.email} for u in users])
 
-# Loan management - RESTful resource
+# Loan management - RESTful resourcedff
 @app.route('/loans', methods=['POST'])
 def create_loan():
     data = request.get_json()
