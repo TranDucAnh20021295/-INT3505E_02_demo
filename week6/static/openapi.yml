@@ -1,0 +1,769 @@
+openapi: 3.0.0
+info:
+  title: Library Management API v6
+  version: 6.0.0
+  description: RESTful API with JWT Authentication, Search, Pagination, and Advanced Features
+
+servers:
+  - url: http://localhost:5005
+    description: Local server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /register:
+    post:
+      summary: Register a new user
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+      responses:
+        '201':
+          description: User registered successfully
+        '409':
+          description: User already exists
+
+  /login:
+    post:
+      summary: User login
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+
+  /books:
+    get:
+      summary: Get books with search and pagination
+      tags: [Books]
+      parameters:
+        - name: offset
+          in: query
+          description: Offset for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Limit for pagination
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Search term for title and author
+          schema:
+            type: string
+        - name: sort_by
+          in: query
+          description: Field to sort by
+          schema:
+            type: string
+            enum: [id, title, author, available, updated_at]
+            default: id
+        - name: sort_order
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: If-None-Match
+          in: header
+          description: ETag for conditional requests
+          schema:
+            type: string
+        - name: If-Modified-Since
+          in: header
+          description: Last-Modified date for conditional requests
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of books with pagination
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBooksResponse'
+        '304':
+          description: Not Modified (cached version is valid)
+        '401':
+          description: Unauthorized
+
+    post:
+      summary: Create a new book
+      tags: [Books]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookCreate'
+      responses:
+        '201':
+          description: Book created successfully
+        '401':
+          description: Unauthorized
+
+  /books/{id}:
+    get:
+      summary: Get book by ID
+      tags: [Books]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: If-None-Match
+          in: header
+          description: ETag for conditional requests
+          schema:
+            type: string
+        - name: If-Modified-Since
+          in: header
+          description: Last-Modified date for conditional requests
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Book details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '304':
+          description: Not Modified (cached version is valid)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Book not found
+
+    put:
+      summary: Update a book
+      tags: [Books]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookUpdate'
+      responses:
+        '200':
+          description: Book updated
+        '401':
+          description: Unauthorized
+        '404':
+          description: Book not found
+
+    delete:
+      summary: Delete a book
+      tags: [Books]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Book deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Book not found
+
+  /users:
+    get:
+      summary: Get users with search and pagination
+      tags: [Users]
+      parameters:
+        - name: offset
+          in: query
+          description: Offset for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Limit for pagination
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Search term for name and email
+          schema:
+            type: string
+        - name: sort_by
+          in: query
+          description: Field to sort by
+          schema:
+            type: string
+            enum: [id, name, email]
+            default: id
+        - name: sort_order
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: List of users with pagination
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsersResponse'
+        '401':
+          description: Unauthorized
+
+  /loans:
+    get:
+      summary: Get loans with search and pagination
+      tags: [Loans]
+      parameters:
+        - name: offset
+          in: query
+          description: Offset for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Limit for pagination
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Search term for dates and status
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by loan status
+          schema:
+            type: string
+            enum: [borrowed, returned]
+        - name: user_id
+          in: query
+          description: Filter by user ID
+          schema:
+            type: integer
+        - name: book_id
+          in: query
+          description: Filter by book ID
+          schema:
+            type: integer
+        - name: sort_by
+          in: query
+          description: Field to sort by
+          schema:
+            type: string
+            enum: [id, user_id, book_id, borrow_date, return_date, status]
+            default: id
+        - name: sort_order
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: List of loans with pagination
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLoansResponse'
+        '401':
+          description: Unauthorized
+
+    post:
+      summary: Create a new loan
+      tags: [Loans]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanCreate'
+      responses:
+        '201':
+          description: Loan created successfully
+        '404':
+          description: User or book not found
+        '409':
+          description: Book not available or user already borrowed this book
+        '401':
+          description: Unauthorized
+
+  /loans/{loan_id}:
+    get:
+      summary: Get loan by ID
+      tags: [Loans]
+      parameters:
+        - name: loan_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Loan details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loan'
+        '404':
+          description: Loan not found
+        '401':
+          description: Unauthorized
+
+  /loans/{loan_id}/return:
+    put:
+      summary: Return a borrowed book
+      tags: [Loans]
+      parameters:
+        - name: loan_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnLoan'
+      responses:
+        '200':
+          description: Loan returned successfully
+        '400':
+          description: Loan not active
+        '404':
+          description: Loan or book not found
+        '401':
+          description: Unauthorized
+
+  /borrows:
+    get:
+      summary: Get all loans (legacy endpoint)
+      tags: [Loans]
+      responses:
+        '200':
+          description: List of loans
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLoansResponse'
+        '401':
+          description: Unauthorized
+
+  /search:
+    get:
+      summary: Advanced search across all entities
+      tags: [Search]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Entity type to search
+          schema:
+            type: string
+            enum: [all, books, users, loans]
+            default: all
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '401':
+          description: Unauthorized
+
+  /stats:
+    get:
+      summary: Get library statistics
+      tags: [Statistics]
+      responses:
+        '200':
+          description: Library statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsResponse'
+        '401':
+          description: Unauthorized
+
+  /external-api/{api_name}:
+    get:
+      summary: Call external API with token cache
+      tags: [External API]
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          description: Name of the external API
+          schema:
+            type: string
+            example: "weather-api"
+      responses:
+        '200':
+          description: External API called successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiResponse'
+        '401':
+          description: Unauthorized
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        author:
+          type: string
+        available:
+          type: integer
+          example: 1
+        updated_at:
+          type: string
+          format: date-time
+
+    BookCreate:
+      type: object
+      required: [title, author]
+      properties:
+        title:
+          type: string
+          example: "The Hobbit"
+        author:
+          type: string
+          example: "J.R.R. Tolkien"
+
+    BookUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        author:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+
+    UserRegister:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        password:
+          type: string
+          example: "password123"
+
+    UserLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        password:
+          type: string
+          example: "password123"
+
+    LoginResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Login successful"
+        token:
+          type: string
+          description: JWT token for authentication
+          example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        user:
+          $ref: '#/components/schemas/User'
+
+    Loan:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        book_id:
+          type: integer
+        borrow_date:
+          type: string
+        return_date:
+          type: string
+        actual_return_date:
+          type: string
+          nullable: true
+        status:
+          type: string
+          example: borrowed
+
+    LoanCreate:
+      type: object
+      required: [user_id, book_id, borrow_date, return_date]
+      properties:
+        user_id:
+          type: integer
+        book_id:
+          type: integer
+        borrow_date:
+          type: string
+        return_date:
+          type: string
+
+    ReturnLoan:
+      type: object
+      required: [actual_return_date]
+      properties:
+        actual_return_date:
+          type: string
+
+    PaginationInfo:
+      type: object
+      properties:
+        offset:
+          type: integer
+          description: Current offset
+        limit:
+          type: integer
+          description: Current limit
+        total:
+          type: integer
+          description: Total number of items
+        pages:
+          type: integer
+          description: Total number of pages
+        has_next:
+          type: boolean
+          description: Whether there is a next page
+        has_prev:
+          type: boolean
+          description: Whether there is a previous page
+        next_num:
+          type: integer
+          nullable: true
+          description: Next page number
+        prev_num:
+          type: integer
+          nullable: true
+          description: Previous page number
+
+    PaginatedBooksResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Book'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedUsersResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginatedLoansResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Loan'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    SearchResult:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [book, user, loan]
+        id:
+          type: integer
+        title:
+          type: string
+          description: For books only
+        author:
+          type: string
+          description: For books only
+        name:
+          type: string
+          description: For users only
+        email:
+          type: string
+          description: For users only
+        status:
+          type: string
+          description: For loans only
+        borrow_date:
+          type: string
+          description: For loans only
+        available:
+          type: integer
+          description: For books only
+        user_id:
+          type: integer
+          description: For loans only
+        book_id:
+          type: integer
+          description: For loans only
+
+    SearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        entity_type:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+
+    StatisticsResponse:
+      type: object
+      properties:
+        books:
+          type: object
+          properties:
+            total:
+              type: integer
+            available:
+              type: integer
+            borrowed:
+              type: integer
+        users:
+          type: object
+          properties:
+            total:
+              type: integer
+        loans:
+          type: object
+          properties:
+            total:
+              type: integer
+            active:
+              type: integer
+            returned:
+              type: integer
+
+    ExternalApiResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Called external API weather-api"
+        data:
+          type: object
+          properties:
+            api_name:
+              type: string
+              example: "weather-api"
+            token_used:
+              type: string
+              description: Cached token used for the API call
+              example: "external_token_weather-api_1640995200"
+            timestamp:
+              type: string
+              format: date-time
+              example: "2024-01-01T12:00:00Z"
+            user_id:
+              type: integer
+              example: 1
