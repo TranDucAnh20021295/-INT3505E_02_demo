@@ -10,7 +10,7 @@ import requests
 import time
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library_v6.db'
 app.config['JWT_SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
@@ -172,12 +172,15 @@ def cache_token(api_name, token, expires_in_seconds=3600):
 
 def require_auth(f):
     def decorated_function(*args, **kwargs):
-        token = request.headers.get('Authorization')
+        token_header = request.headers.get('Authorization')
+        token = None
+        if token_header and token_header.startswith('Bearer '):
+            token = token_header[7:]
+        # Fallback: read from HttpOnly cookie if Authorization header is absent
+        if not token:
+            token = request.cookies.get('access_token')
         if not token:
             return jsonify({'error': 'Token is missing'}), 401
-        
-        if token.startswith('Bearer '):
-            token = token[7:]
         
         user_info = verify_jwt_token(token)
         if not user_info:
@@ -253,7 +256,8 @@ def login():
     # Generate JWT token
     token = generate_jwt_token(user.id, user.email)
     
-    return jsonify({
+    # Build response JSON and set HttpOnly cookie for the token
+    resp = make_response(jsonify({
         'message': 'Login successful',
         'token': token,
         'user': {
@@ -261,7 +265,17 @@ def login():
             'name': user.name,
             'email': user.email
         }
-    })
+    }))
+    # HttpOnly cookie so JS không đọc được token (an toàn hơn); SameSite=Lax để form/link cùng site gửi kèm cookie
+    resp.set_cookie(
+        'access_token',
+        token,
+        httponly=True,
+        secure=False,  # bật True khi deploy https
+        samesite='Lax',
+        max_age=int(app.config['JWT_ACCESS_TOKEN_EXPIRES'].total_seconds())
+    )
+    return resp
 
 @app.route('/users', methods=['GET'])
 @require_auth
