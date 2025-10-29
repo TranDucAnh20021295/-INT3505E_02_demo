@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Login - Save JWT to localStorage</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 40px; }
+    input, button { padding: 8px 12px; margin: 6px 0; }
+    .row { margin-bottom: 12px; }
+    .token { word-break: break-all; background: #f7f7f7; padding: 8px; border-radius: 6px; }
+  </style>
+  <script>
+    async function login(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        alert('Login failed: ' + txt);
+        return;
+      }
+      const data = await res.json();
+      localStorage.setItem('token', data.token);
+      document.getElementById('savedToken').textContent = data.token;
+      alert('Saved token to localStorage');
+    }
+
+    async function testAuth() {
+      const token = localStorage.getItem('token');
+      if (!token) return alert('No token in localStorage');
+      const res = await fetch('/users?limit=1', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const txt = await res.text();
+      document.getElementById('testResult').textContent = txt;
+    }
+
+    function clearToken() {
+      localStorage.removeItem('token');
+      document.getElementById('savedToken').textContent = '(cleared)';
+    }
+  </script>
+  </head>
+<body>
+  <h2>Login and save JWT to localStorage</h2>
+  <form onsubmit="login(event)">
+    <div class="row">
+      <label>Email</label><br />
+      <input id="email" type="email" placeholder="john@example.com" required />
+    </div>
+    <div class="row">
+      <label>Password</label><br />
+      <input id="password" type="password" placeholder="password123" required />
+    </div>
+    <button type="submit">Login</button>
+    <button type="button" onclick="clearToken()">Clear token</button>
+  </form>
+
+  <h3>Saved token</h3>
+  <div id="savedToken" class="token">(none)</div>
+
+  <h3>Test authorized request</h3>
+  <button onclick="testAuth()">GET /users?limit=1 (with Bearer)</button>
+  <pre id="testResult" class="token"></pre>
+</body>
+</html>
+
+

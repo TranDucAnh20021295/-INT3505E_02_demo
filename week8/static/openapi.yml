@@ -5,7 +5,7 @@ info:
   description: RESTful API with JWT Authentication, Search, Pagination, and Advanced Features
 
 servers:
-  - url: http://localhost:5005
+  - url: http://localhost:5008
     description: Local server
 
 security:

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, session
 from flask_sqlalchemy import SQLAlchemy
 from flask import send_from_directory
 from flask_cors import CORS
@@ -106,6 +106,10 @@ def build_response_with_pagination(paginated_result, data_serializer):
 @app.route("/static/openapi.yml")
 def serve_openapi():
     return send_from_directory("static", "openapi.yml")
+
+@app.route("/static/login.html")
+def serve_login():
+    return send_from_directory("static", "login.html")
 
 @app.route("/swagger")
 def swagger_ui():
