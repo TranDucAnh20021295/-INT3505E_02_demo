@@ -5,7 +5,7 @@ info:
   description: RESTful API with JWT Authentication, Search, Pagination, and Advanced Features
 
 servers:
-  - url: http://localhost:5008
+  - url: http://localhost:5005
     description: Local server
 
 security:
@@ -54,7 +54,6 @@ paths:
     get:
       summary: Get books with search and pagination
       tags: [Books]
-      operationId: listBooks
       parameters:
         - name: offset
           in: query
@@ -116,7 +115,6 @@ paths:
     post:
       summary: Create a new book
       tags: [Books]
-      operationId: createBook
       requestBody:
         required: true
         content:
@@ -133,7 +131,6 @@ paths:
     get:
       summary: Get book by ID
       tags: [Books]
-      operationId: getBookById
       parameters:
         - name: id
           in: path
@@ -168,7 +165,6 @@ paths:
     put:
       summary: Update a book
       tags: [Books]
-      operationId: updateBookById
       parameters:
         - name: id
           in: path
@@ -192,7 +188,6 @@ paths:
     delete:
       summary: Delete a book
       tags: [Books]
-      operationId: deleteBookById
       parameters:
         - name: id
           in: path

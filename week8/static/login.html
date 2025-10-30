@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Login - Save JWT to localStorage</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 40px; }
+    input, button { padding: 8px 12px; margin: 6px 0; }
+    .row { margin-bottom: 12px; }
+    .token { word-break: break-all; background: #f7f7f7; padding: 8px; border-radius: 6px; }
+  </style>
+  <script>
+    async function login(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        alert('Login failed: ' + txt);
+        return;
+      }
+      const data = await res.json();
+      // Save to localStorage and sessionStorage
+      localStorage.setItem('token', data.token);
+      sessionStorage.setItem('token', data.token);
+      document.getElementById('savedTokenLocal').textContent = data.token;
+      document.getElementById('savedTokenSession').textContent = data.token;
+      alert('Saved token to localStorage and sessionStorage');
+    }
+
+    async function testAuthLocal() {
+      const token = localStorage.getItem('token');
+      if (!token) return alert('No token in localStorage');
+      const res = await fetch('/users?limit=1', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const txt = await res.text();
+      document.getElementById('testResultLocal').textContent = txt;
+    }
+
+    async function testAuthSession() {
+      const token = sessionStorage.getItem('token');
+      if (!token) return alert('No token in sessionStorage');
+      const res = await fetch('/users?limit=1', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const txt = await res.text();
+      document.getElementById('testResultSession').textContent = txt;
+    }
+
+    function clearToken() {
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      document.getElementById('savedTokenLocal').textContent = '(cleared)';
+      document.getElementById('savedTokenSession').textContent = '(cleared)';
+    }
+  </script>
+  </head>
+<body>
+  <h2>Login and save JWT to localStorage</h2>
+  <form onsubmit="login(event)">
+    <div class="row">
+      <label>Email</label><br />
+      <input id="email" type="email" placeholder="john@example.com" required />
+    </div>
+    <div class="row">
+      <label>Password</label><br />
+      <input id="password" type="password" placeholder="password123" required />
+    </div>
+    <button type="submit">Login</button>
+    <button type="button" onclick="clearToken()">Clear token</button>
+  </form>
+
+  <h3>Saved tokens</h3>
+  <div><strong>localStorage:</strong></div>
+  <div id="savedTokenLocal" class="token">(none)</div>
+  <div><strong>sessionStorage:</strong></div>
+  <div id="savedTokenSession" class="token">(none)</div>
+
+  <h3>Test authorized request</h3>
+  <button onclick="testAuthLocal()">GET /users?limit=1 using localStorage token</button>
+  <pre id="testResultLocal" class="token"></pre>
+  <button onclick="testAuthSession()">GET /users?limit=1 using sessionStorage token</button>
+  <pre id="testResultSession" class="token"></pre>
+</body>
+</html>
+
+
