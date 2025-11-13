@@ -1,0 +1,20 @@
+{
+	"id": "library-api-environment",
+	"name": "Library API Environment",
+	"values": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5008",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"_postman_variable_scope": "environment"
+}
+
