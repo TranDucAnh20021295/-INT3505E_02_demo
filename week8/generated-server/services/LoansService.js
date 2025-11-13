@@ -56,10 +56,11 @@ const loansLoanIdGET = ({ loanUnderscoreid }) => new Promise(
   },
 );
 
-const loansPOST = ({ loanCreate }) => new Promise(
+const loansPOST = (params) => new Promise(
   async (resolve, reject) => {
     try {
-      const { user_id, book_id, borrow_date, return_date } = loanCreate || {};
+      const data = (params && (params.loanCreate || params.body)) ? (params.loanCreate || params.body) : (params || {});
+      const { user_id, book_id, borrow_date, return_date } = data || {};
       if (!user_id || !book_id || !borrow_date || !return_date) {
         return reject(Service.rejectResponse('Missing fields', 400));
       }
@@ -78,14 +79,15 @@ const loansPOST = ({ loanCreate }) => new Promise(
   },
 );
 
-const loansLoanIdReturnPUT = ({ loanUnderscoreid, returnLoan }) => new Promise(
+const loansLoanIdReturnPUT = (params) => new Promise(
   async (resolve, reject) => {
     try {
-      const id = toInt(loanUnderscoreid);
+      const id = toInt(params.loanUnderscoreid);
+      const body = (params && (params.returnLoan || params.body)) ? (params.returnLoan || params.body) : {};
       const l = await Loan.findOne({ id }).lean();
       if (!l) return reject(Service.rejectResponse('Loan not found', 404));
       if (l.status !== 'borrowed') return reject(Service.rejectResponse('Loan not active', 400));
-      const { actual_return_date } = returnLoan || {};
+      const { actual_return_date } = body || {};
       await Loan.findOneAndUpdate({ id }, { status: 'returned', actual_return_date });
       await Book.findOneAndUpdate({ id: l.book_id }, { $inc: { available: 1 }, updated_at: new Date() });
       resolve(Service.successResponse({ message: 'Loan returned successfully' }));

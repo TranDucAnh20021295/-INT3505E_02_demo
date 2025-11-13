@@ -18,10 +18,11 @@ async function getNextSequence(name) {
   return result.seq;
 }
 
-const loginPOST = ({ userLogin }) => new Promise(
+const loginPOST = (params) => new Promise(
   async (resolve, reject) => {
     try {
-      const { email, password } = userLogin || {};
+      const data = (params && (params.userLogin || params.body)) ? (params.userLogin || params.body) : (params || {});
+      const { email, password } = data || {};
       if (!email || !password) return reject(Service.rejectResponse('Missing email or password', 400));
       const u = await User.findOne({ email }).lean();
       if (!u) return reject(Service.rejectResponse('Invalid credentials', 401));
@@ -40,11 +41,15 @@ const loginPOST = ({ userLogin }) => new Promise(
   },
 );
 
-const registerPOST = ({ userRegister }) => new Promise(
+const registerPOST = (params) => new Promise(
   async (resolve, reject) => {
     try {
-      const { name, email, password } = userRegister || {};
-      if (!name || !email || !password) return reject(Service.rejectResponse('Missing fields', 400));
+      let data = (params && (params.userRegister || params.body)) ? (params.userRegister || params.body) : (params || {});
+      if (data && data.userRegister) data = data.userRegister;
+      const { name, email, password } = data || {};
+      if (!name || !email || !password) {
+        return reject(Service.rejectResponse('Missing fields: name, email, and password are required', 400));
+      }
       const exists = await User.findOne({ email }).lean();
       if (exists) return reject(Service.rejectResponse('User already exists', 409));
       const id = await getNextSequence('users');

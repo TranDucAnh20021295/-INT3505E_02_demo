@@ -5,7 +5,15 @@
   "main": "index.js",
   "scripts": {
     "prestart": "npm install",
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "mocha test/**/*.test.js --timeout 10000",
+    "test:watch": "mocha test/**/*.test.js --watch --timeout 10000",
+    "test:auth": "mocha test/AuthenticationService.test.js --timeout 10000",
+    "test:books": "mocha test/BooksService.test.js --timeout 10000",
+    "test:users": "mocha test/UsersService.test.js --timeout 10000",
+    "test:loans": "mocha test/LoansService.test.js --timeout 10000",
+    "test:search": "mocha test/SearchService.test.js --timeout 10000",
+    "test:stats": "mocha test/StatisticsService.test.js --timeout 10000"
   },
   "keywords": [
     "openapi-generator",
@@ -41,3 +49,4 @@
     }
   }
 }
+

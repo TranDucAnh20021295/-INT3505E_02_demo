@@ -69,10 +69,11 @@ const booksIdGET = ({ id }) => new Promise(
   }
 );
 // Create new book
-const booksPOST = ({ bookCreate }) => new Promise(
+const booksPOST = (params) => new Promise(
   async (resolve, reject) => {
     try {
-      const { title, author } = bookCreate || {};
+      const data = (params && (params.bookCreate || params.body)) ? (params.bookCreate || params.body) : (params || {});
+      const { title, author } = data || {};
       if (!title || !author) throw new Error('title and author are required');
       const id = await getNextSequence('books');
       const created = await Book.create({ id, title, author, available: 1, updated_at: new Date() });
@@ -83,12 +84,13 @@ const booksPOST = ({ bookCreate }) => new Promise(
   }
 );
 // Update book by ID
-const booksIdPUT = ({ id, bookUpdate }) => new Promise(
+const booksIdPUT = (params) => new Promise(
   async (resolve, reject) => {
     try {
-      const safeId = toSafeInt(id);
+      const safeId = toSafeInt(params.id);
       if (isNaN(safeId)) throw new Error('Invalid book ID');
-      const update = { ...bookUpdate, updated_at: new Date() };
+      const body = (params && (params.bookUpdate || params.body)) ? (params.bookUpdate || params.body) : {};
+      const update = { ...body, updated_at: new Date() };
       const updated = await Book.findOneAndUpdate({ id: safeId }, update, { new: true }).lean();
       if (!updated) return reject(Service.rejectResponse('Book not found', 404));
       resolve(Service.successResponse({ message: 'Book updated' }));
