@@ -1,0 +1,45 @@
+{
+  "name": "library-management-api-week11",
+  "version": "11.0.0",
+  "description": "Week11 RESTful API with observability and security hardening",
+  "main": "index.js",
+  "scripts": {
+    "prestart": "npm install",
+    "start": "node index.js",
+    "test": "newman run Library_API_Postman_Collection.json",
+    "test:report": "newman run Library_API_Postman_Collection.json -r cli,html --reporter-html-export newman-report.html"
+  },
+  "keywords": [
+    "openapi-generator",
+    "openapi",
+    "week11"
+  ],
+  "license": "Unlicense",
+  "private": true,
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "camelcase": "^5.3.1",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "express-openapi-validator": "^4.13.8",
+    "js-yaml": "^3.14.1",
+    "mongoose": "^8.9.0",
+    "ono": "^5.0.1",
+    "openapi-sampler": "^1.0.0-beta.15",
+    "swagger-ui-express": "^4.6.3",
+    "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "newman": "^6.1.0"
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true
+    }
+  }
+}
+
