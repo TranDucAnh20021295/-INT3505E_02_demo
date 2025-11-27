@@ -1,0 +1,45 @@
+# Node modules
+node_modules/
+
+# Local env files
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Coverage directory used by coverage tools
+coverage/
+
+# nyc test coverage
+.nyc_output/
+
+# build output
+build/
+dist/
+
+# IDE/editor
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# OpenAPI Generator
+.openapi-generator/
+.openapi-generator-ignore
